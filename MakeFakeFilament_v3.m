@@ -2,8 +2,9 @@ clear all;
 close all;
 tic
 
-speed_mean = 5
+speed_mean = 6
 speed_std = 2
+speed_change = -0.1 % change in terms of total value*speed_change
 fmot = 1; % between [0, 1.0], at 0.5, 50% of filaments starts moving
 fmot_change = 0; % between [-0.5, 0.5]. E.g. for 0.5 all filaments will move by the end
 fmot_change_rate = 0; % between [1,100]. 1 changes fastest, 5 changes slower, and so on
@@ -14,13 +15,13 @@ height = 480;
 width = 720;
 outside = 400;
 
-bend=0.5;
-filamentcount=30;
+bend=0;
+filamentcount=2;
 speed = abs(normrnd(speed_mean, speed_std,[1, filamentcount]))
-% speed=[1.5, 10.5]
+speed=[1.5, 10.5]
 thickness=1;
-minimumlength=10;
-maximumlength=100;
+minimumlength=20;
+maximumlength=20;
 
 output = ['speed', num2str(speed_mean), '_fmot',num2str(fmot),...
     '_fmotChange',num2str(fmot_change), '_fmotChangeRate',num2str(fmot_change_rate),...
@@ -36,24 +37,24 @@ for i=1:filamentcount
     xylength(i)=round(rand*(maximumlength-minimumlength))+minimumlength;
     filament(i,1,1)=xstart(i);
     filament(i,1,2)=ystart(i);
-    theta1=rand*2*pi;
+    theta1=0%rand*2*pi;
     filament(i,2,1)=xstart(i)+speed(i).*cos(theta1);
     filament(i,2,2)=ystart(i)+speed(i).*sin(theta1);
     
-    for j=3:xylength(i)./speed(i)+1
+    for j=3:round(xylength(i)./speed(i)+1)
         theta2=atan2((filament(i,j-1,2)-filament(i,j-2,2)),(filament(i,j-1,1)-filament(i,j-2,1)));
         newtheta=theta2+(0.5-rand)*bend;
         filament(i,j,1)=filament(i,j-1,1)+speed(i).*cos(newtheta);
         filament(i,j,2)=filament(i,j-1,2)+speed(i).*sin(newtheta);
     end
 end
-filament(:,:,1);
+filament(:,:,1)
 act_maximumlength = max(xylength);
 
-% filament(1,end,1)-filament(1,1,1)
+filament(1,end,1)-filament(1,1,1)
 % filament(2,2,1)
 % filament(2,1,1)
-% filament(2,3,1)-filament(2,1,1)
+filament(2,3,1)-filament(2,1,1)
 %%
 ismoving = rand(filamentcount,1) + fmot - 0.5;
 
@@ -61,6 +62,7 @@ figure
 M.colormap = [];
 Mwrite.colormap = []
 for t=1:150
+
     M.cdata = zeros(height+outside, width+outside, 3);
     max(max(M.cdata))
     if rem(t, fmot_change_rate) == 0
@@ -78,30 +80,30 @@ for t=1:150
             filament(i,1:ender-1,2)=filament(i,2:ender,2);
             filament(i,ender,1)=filament(i,ender,1)+speed(i).*cos(newtheta);
             filament(i,ender,2)=filament(i,ender,2)+speed(i).*sin(newtheta);
-            if filament(i,ender,1) >= width+outside
-                filament(i,ender,1) = 0;
-                filament(i,ender,2) = 0;
-                ender_list(i) = ender - 1;
-            end
-            if filament(i,ender,2) >= height+outside
-                filament(i,ender,2) = 0;
-                filament(i,ender,1) = 0;
-                ender_list(i) = ender - 1;
-            end
+%             if filament(i,ender,1) >= width+outside
+%                 filament(i,ender,1) = 0;
+%                 filament(i,ender,2) = 0;
+%                 ender_list(i) = ender - 1;
+%             end
+%             if filament(i,ender,2) >= height+outside
+%                 filament(i,ender,2) = 0;
+%                 filament(i,ender,1) = 0;
+%                 ender_list(i) = ender - 1;
+%             end
             
         else
             filament(i,1:xylength(i),1) = filament(i,1:xylength(i),1) + (rand()-0.5) * random;
             filament(i,1:xylength(i),2) = filament(i,1:xylength(i),2) + (rand()-0.5) * random;
         end
         
-        if ender_list(i) == 1
-            filament(i,:,:) = [];
-            speed(i) = [];
-            xylength(i) = [];
-            ismoving(i) = [];
-            filamentcount = filamentcount - 1;
-            ender_list(i) = [];
-        end
+%         if ender_list(i) == 1
+%             filament(i,:,:) = [];
+%             speed(i) = [];
+%             xylength(i) = [];
+%             ismoving(i) = [];
+%             filamentcount = filamentcount - 1;
+%             ender_list(i) = [];
+%         end
         end
     end
     
@@ -128,6 +130,8 @@ for t=1:150
     Mwrite.cdata(:,:,1)=temp;
     Mwrite.cdata(:,:,2)=temp;
     Mwrite.cdata(:,:,3)=temp;
+    
+    
     writeVideo(aviobj,Mwrite);
 end
 close
